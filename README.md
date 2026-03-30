@@ -78,7 +78,7 @@ You can use the following accounts to explore different roles:
 | :--- | :--- | :--- |
 | **Admin** | `admin` | `admin@123` |
 | **Manager** | `manager` | `manager@123` |
-| **Employee** | Any Name | `123456` |
+| **Employee** | Employee Name | `123456` |
 
 *Note: For the Employee role, the system will automatically create a new user profile if the name doesn't exist yet.*
 
