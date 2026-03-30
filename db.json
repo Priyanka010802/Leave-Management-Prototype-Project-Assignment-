@@ -1,0 +1,18 @@
+{
+  "server-time": {
+    "currentTime": "2026-03-31T12:00:00.000Z"
+  },
+  "employees": [
+    {
+      "id": "m1",
+      "name": "manager",
+      "role": "Manager"
+    },
+    {
+      "id": "a1",
+      "name": "admin",
+      "role": "Admin"
+    }
+  ],
+  "leaves": []
+}
