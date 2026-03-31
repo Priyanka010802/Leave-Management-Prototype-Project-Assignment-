@@ -138,8 +138,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     overflowY: 'auto',
-    maxHeight: 'calc(100vh - 120px)',
-    border: '1px solid #e2e8f0'
+    maxHeight: 'calc(100vh - 120px)'
   },
   header: {
     marginBottom: '32px',
