@@ -32,6 +32,11 @@
       "id": "1774951526035",
       "name": "priyanka",
       "role": "Employee"
+    },
+    {
+      "id": "1774963292841",
+      "name": "sadiya",
+      "role": "Employee"
     }
   ],
   "leaves": [
@@ -94,6 +99,16 @@
       "status": "Pending",
       "days": 3,
       "id": 6
+    },
+    {
+      "employeeId": "1774946032328",
+      "employee": "aryan",
+      "startDate": "2026-04-07",
+      "endDate": "2026-04-11",
+      "reason": "ferver",
+      "status": "Pending",
+      "days": 5,
+      "id": 7
     }
   ]
 }

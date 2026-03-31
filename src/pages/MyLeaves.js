@@ -136,9 +136,7 @@ const styles = {
     maxWidth: '1100px',
     border: '1px solid #e2e8f0',
     display: 'flex',
-    flexDirection: 'column',
-    overflowY: 'auto',
-    maxHeight: 'calc(100vh - 120px)'
+    flexDirection: 'column'
   },
   header: {
     marginBottom: '32px',

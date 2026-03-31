@@ -174,11 +174,11 @@ class Login extends Component {
 
 const styles = {
   page: {
-    height: '100vh',
-    width: '100vw',
+    minHeight: '100vh',
+    width: '100%',
     display: 'flex',
     backgroundColor: '#ffffff',
-    overflow: 'hidden'
+    overflow: 'auto'
   },
   brandingPanel: {
     flex: '1.4',

@@ -166,8 +166,6 @@ const styles = {
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
     display: 'flex',
     flexDirection: 'column',
-    overflowY: 'auto',
-    maxHeight: 'calc(100vh - 120px)',
     border: '1px solid #e2e8f0'
   },
   header: {
