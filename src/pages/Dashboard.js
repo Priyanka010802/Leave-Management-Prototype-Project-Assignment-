@@ -31,11 +31,10 @@ class Dashboard extends Component {
   render() {
     const { leaves, loading } = this.state;
 
-    if (loading) return <div style={styles.container}>Loading...</div>;
+    if (loading) return <div style={styles.loadingContainer}><div style={styles.spinner}></div></div>;
 
     const total = leaves.length;
     let approved = 0, pending = 0, rejected = 0;
-
     const employeeData = {};
 
     leaves.forEach(l => {
@@ -53,94 +52,83 @@ class Dashboard extends Component {
       labels: Object.keys(employeeData),
       datasets: [
         {
-          label: 'Applied Leaves',
+          label: 'Applications',
           data: Object.values(employeeData),
-          backgroundColor: [
-            'rgba(37, 99, 235, 0.8)',
-            'rgba(16, 185, 129, 0.8)',
-            'rgba(245, 158, 11, 0.8)',
-            'rgba(239, 68, 68, 0.8)',
-            'rgba(139, 92, 246, 0.8)'
-          ],
-          borderColor: '#ffffff',
-          borderWidth: 2,
-          borderRadius: 8,
-          hoverBackgroundColor: '#0f172a'
+          backgroundColor: '#3b82f6',
+          borderRadius: 6,
         }
       ]
     };
 
     const chartOptions = {
       responsive: true,
-      animation: {
-        duration: 2000,
-        easing: 'easeOutQuart'
-      },
+      maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         tooltip: {
           backgroundColor: '#0f172a',
           padding: 12,
-          titleFont: { size: 14, weight: 'bold' },
-          bodyFont: { size: 13 }
+          cornerRadius: 8
         }
       },
       scales: {
-        y: {
-          beginAtZero: true,
-          grid: { display: false },
-          ticks: { stepSize: 1, color: '#64748b' }
-        },
-        x: {
-          grid: { display: false },
-          ticks: { color: '#64748b' }
-        }
+        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8' } },
+        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
       }
     };
 
     return (
-      <div style={styles.container}>
-        <div style={styles.card} className="animate-popIn">
+      <div className="container-responsive animate-fadeIn">
+        <div style={styles.card}>
           <div style={styles.header}>
-            <div style={styles.logo}>
-              {/* <div style={styles.logoSquare}></div> */}
-              {/* <div style={{...styles.logoSquare, backgroundColor: '#475569'}}></div> */}
+            <div style={styles.headerInfo}>
+              <div style={styles.badge}>System Analytics</div>
+              <h1 style={styles.title}>Admin Command Center</h1>
+              <p style={styles.subtitle}>Real-time monitoring of personnel leave transitions.</p>
             </div>
-            <div style={styles.headerText}>
-              <h2 style={styles.title}>System Overview</h2>
-              <p style={styles.subtitle}>Administrative control panel for leave management.</p>
+            <div style={styles.headerActions}>
+              <button style={styles.exportBtn}>Generate Report</button>
             </div>
           </div>
 
           <div style={styles.statsGrid} className="stats-grid-mobile">
-            <div style={{ ...styles.statCard, border: '1px solid #e2e8f0' }}>
-              <h3 style={styles.statTitle}>Total Applications</h3>
-              <p style={{ ...styles.statValue, color: '#0f172a' }}>{total}</p>
+            <div style={styles.statCard}>
+              <div style={{...styles.statIcon, backgroundColor: '#eff6ff', color: '#2563eb'}}>Σ</div>
+              <div style={styles.statInfo}>
+                <span style={styles.statLabel}>Total Volume</span>
+                <span style={styles.statValue}>{total}</span>
+              </div>
             </div>
-            <div style={{ ...styles.statCard, border: '1px solid #bbf7d0', backgroundColor: '#f0fdf4' }}>
-              <h3 style={styles.statTitle}>Approved</h3>
-              <p style={{ ...styles.statValue, color: '#166534' }}>{approved}</p>
+            <div style={styles.statCard}>
+              <div style={{...styles.statIcon, backgroundColor: '#ecfdf5', color: '#10b981'}}>✓</div>
+              <div style={styles.statInfo}>
+                <span style={styles.statLabel}>Success Rate</span>
+                <span style={styles.statValue}>{approved}</span>
+              </div>
             </div>
-            <div style={{ ...styles.statCard, border: '1px solid #fde68a', backgroundColor: '#fffbeb' }}>
-              <h3 style={styles.statTitle}>Pending</h3>
-              <p style={{ ...styles.statValue, color: '#92400e' }}>{pending}</p>
+            <div style={styles.statCard}>
+              <div style={{...styles.statIcon, backgroundColor: '#fffbeb', color: '#f59e0b'}}>?</div>
+              <div style={styles.statInfo}>
+                <span style={styles.statLabel}>Await Review</span>
+                <span style={styles.statValue}>{pending}</span>
+              </div>
             </div>
-            <div style={{ ...styles.statCard, border: '1px solid #fecaca', backgroundColor: '#fef2f2' }}>
-              <h3 style={styles.statTitle}>Rejected</h3>
-              <p style={{ ...styles.statValue, color: '#991b1b' }}>{rejected}</p>
+            <div style={styles.statCard}>
+              <div style={{...styles.statIcon, backgroundColor: '#fef2f2', color: '#ef4444'}}>✕</div>
+              <div style={styles.statInfo}>
+                <span style={styles.statLabel}>Declined</span>
+                <span style={styles.statValue}>{rejected}</span>
+              </div>
             </div>
           </div>
 
-          <div style={styles.chartSection}>
-            <h3 style={styles.sectionTitle}>Employee Leave Statistics</h3>
-            <div style={styles.chartContainer}>
-              <Bar
-                data={chartData}
-                options={{
-                  ...chartOptions,
-                  maintainAspectRatio: false
-                }}
-              />
+          <div style={styles.visualSection}>
+            <div style={styles.chartTitleBox}>
+              <h3 style={styles.sectionTitle}>Application Distribution by User</h3>
+              <p style={styles.sectionSubtitle}>Top contributing employees this cycle</p>
+            </div>
+            <div style={styles.chartBox}>
+              <Bar data={chartData} options={chartOptions} />
             </div>
           </div>
         </div>
@@ -151,107 +139,144 @@ class Dashboard extends Component {
 
 const styles = {
   container: {
+    width: '100%',
     height: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    padding: '24px',
+    backgroundColor: '#f1f5f9',
     boxSizing: 'border-box'
   },
-  card: {
-    backgroundColor: '#ffffff',
-    padding: 'clamp(24px, 5vw, 40px)',
-    borderRadius: '16px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-    width: '100%',
-    maxWidth: '1200px',
-    border: '1px solid #e2e8f0',
-    display: 'flex',
-    flexDirection: 'column',
-    maxHeight: '100%',
-    overflowY: 'auto'
-  },
-  header: {
+  loadingContainer: {
+    height: '100%',
     display: 'flex',
     alignItems: 'center',
-    gap: '20px',
-    marginBottom: '32px',
-    paddingBottom: '24px',
+    justifyContent: 'center'
+  },
+  spinner: {
+    width: '40px',
+    height: '40px',
+    border: '4px solid #e2e8f0',
+    borderTopColor: '#3b82f6',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  },
+  card: {
+    width: '100%',
+    maxWidth: '1200px',
+    backgroundColor: '#ffffff',
+    borderRadius: '24px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+    display: 'flex',
+    flexDirection: 'column',
+    overflowY: 'auto',
+    maxHeight: 'calc(100vh - 120px)',
+    border: '1px solid #e2e8f0'
+  },
+  header: {
+    padding: '40px',
     borderBottom: '1px solid #f1f5f9',
-    flexShrink: 0
-  },
-  logo: {
     display: 'flex',
-    gap: '4px'
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '20px'
   },
-  logoSquare: {
-    width: '16px',
-    height: '16px',
-    borderRadius: '4px',
-    backgroundColor: '#2563eb'
-  },
-  headerText: {
-    display: 'flex',
-    flexDirection: 'column'
+  badge: {
+    display: 'inline-block',
+    padding: '4px 12px',
+    backgroundColor: '#0f172a',
+    color: '#ffffff',
+    fontSize: '11px',
+    fontWeight: '700',
+    borderRadius: '20px',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    marginBottom: '16px'
   },
   title: {
-    margin: '0 0 4px 0',
+    fontSize: '32px',
+    fontWeight: '800',
     color: '#0f172a',
-    fontSize: '24px',
-    fontWeight: '700',
-    letterSpacing: '-0.5px'
+    margin: '0 0 8px 0',
+    letterSpacing: '-1px'
   },
   subtitle: {
+    fontSize: '16px',
     color: '#64748b',
-    fontSize: '14px',
     margin: 0
   },
+  exportBtn: {
+    padding: '12px 24px',
+    backgroundColor: '#ffffff',
+    border: '2px solid #e2e8f0',
+    borderRadius: '12px',
+    color: '#0f172a',
+    fontWeight: '700',
+    fontSize: '14px',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  },
   statsGrid: {
+    padding: '40px',
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '24px',
-    marginBottom: '48px'
+    backgroundColor: '#f8fafc'
   },
   statCard: {
+    backgroundColor: '#ffffff',
     padding: '24px',
-    borderRadius: '12px',
-    textAlign: 'left',
-    backgroundColor: '#ffffff'
+    borderRadius: '20px',
+    border: '1px solid #e2e8f0',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px'
   },
-  statTitle: {
-    margin: '0 0 12px 0',
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px'
-  },
-  statValue: {
-    margin: 0,
-    fontSize: '32px',
+  statIcon: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '14px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '20px',
     fontWeight: '700'
   },
-  chartSection: {
-    marginTop: '24px',
-    flex: 1,
-    overflow: 'hidden',
+  statInfo: {
     display: 'flex',
     flexDirection: 'column'
   },
-  sectionTitle: {
-    fontSize: '15px',
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: '16px',
-    flexShrink: 0
+  statLabel: {
+    fontSize: '13px',
+    color: '#64748b',
+    fontWeight: '600'
   },
-  chartContainer: {
-    padding: '24px',
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    border: '1px solid #e2e8f0',
+  statValue: {
+    fontSize: '24px',
+    fontWeight: '800',
+    color: '#0f172a'
+  },
+  visualSection: {
     flex: 1,
-    minHeight: 0,
-    overflow: 'hidden'
+    padding: '40px',
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  chartTitleBox: {
+    marginBottom: '24px'
+  },
+  sectionTitle: {
+    fontSize: '18px',
+    fontWeight: '800',
+    color: '#0f172a',
+    margin: '0 0 4px 0'
+  },
+  sectionSubtitle: {
+    fontSize: '14px',
+    color: '#94a3b8',
+    margin: 0
+  },
+  chartBox: {
+    flex: 1,
+    minHeight: '300px'
   }
 };
 

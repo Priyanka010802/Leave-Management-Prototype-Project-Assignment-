@@ -12,7 +12,83 @@
       "id": "a1",
       "name": "admin",
       "role": "Admin"
+    },
+    {
+      "id": "1774946032328",
+      "name": "aryan",
+      "role": "Employee"
+    },
+    {
+      "id": "1774946099788",
+      "name": "bawankar",
+      "role": "Employee"
+    },
+    {
+      "id": "1774946134823",
+      "name": "banawakr",
+      "role": "Employee"
     }
   ],
-  "leaves": []
+  "leaves": [
+    {
+      "employeeId": "1774937683155",
+      "employee": "Priyanka",
+      "startDate": "2026-04-01",
+      "endDate": "2026-04-03",
+      "reason": "sick ",
+      "status": "Approved",
+      "days": 3,
+      "id": 1
+    },
+    {
+      "employeeId": "1774938701765",
+      "employee": "aryan",
+      "startDate": "2026-04-13",
+      "endDate": "2026-04-17",
+      "reason": "wedding ",
+      "status": "Pending",
+      "days": 5,
+      "id": 2
+    },
+    {
+      "employeeId": "1774939420331",
+      "employee": "priyanka",
+      "startDate": "2026-04-13",
+      "endDate": "2026-04-17",
+      "reason": "wedding",
+      "status": "Rejected",
+      "days": 5,
+      "id": 3
+    },
+    {
+      "employeeId": "1774940145630",
+      "employee": "alisha",
+      "startDate": "2026-04-08",
+      "endDate": "2026-04-10",
+      "reason": "travlling ",
+      "status": "Approved",
+      "days": 3,
+      "id": 4
+    },
+    {
+      "employeeId": "1774941471418",
+      "employee": "alisha",
+      "startDate": "2026-04-15",
+      "endDate": "2026-04-17",
+      "reason": "emergycy ",
+      "status": "Pending",
+      "days": 3,
+      "id": 5
+    },
+    {
+      "employeeId": "1774946099788",
+      "employee": "bawankar",
+      "startDate": "2026-04-08",
+      "endDate": "2026-04-10",
+      "reason": "going for trip",
+      "status": "Pending",
+      "days": 3,
+      "id": 6
+    }
+  ]
 }

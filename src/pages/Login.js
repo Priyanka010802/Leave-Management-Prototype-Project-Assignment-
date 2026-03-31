@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { observer } from 'mobx-react';
 import { StoreContext } from '../store/StoreContext';
 import { withRouter } from '../utils/withRouter';
+import api from '../utils/api';
 
 class Login extends Component {
   static contextType = StoreContext;
@@ -10,7 +11,8 @@ class Login extends Component {
     role: 'Employee',
     username: '',
     password: '',
-    hasError: false
+    hasError: false,
+    animating: false
   };
 
   handleChange = (e) => {
@@ -23,120 +25,146 @@ class Login extends Component {
     const store = this.context;
 
     if (!username || !password) {
-      alert("Please enter username and password!");
       this.setState({ hasError: true });
       return;
     }
 
-    if (role === 'Manager') {
-      if (username !== 'manager' || password !== 'manager@123') {
-        alert("Invalid Manager Credentials (use manager/manager@123)");
-        this.setState({ hasError: true });
-        return;
+    this.setState({ animating: true });
+
+    setTimeout(async () => {
+      let userFound = null;
+      try {
+        if (role === 'Manager') {
+          if (username === 'manager' && password === 'manager@123') {
+            userFound = store.employees.find(e => e.role === 'Manager') || { id: 'm1', name: 'Manager', role: 'Manager' };
+          }
+        } else if (role === 'Admin') {
+          if (username === 'admin' && password === 'admin@123') {
+            userFound = store.employees.find(e => e.role === 'Admin') || { id: 'a1', name: 'Admin', role: 'Admin' };
+          }
+        } else {
+          if (password === '123456') {
+            // Re-fetch employees to ensure we have the latest list from server
+            const resp = await api.get('/employees');
+            const allEmployees = resp.body || [];
+            
+            userFound = allEmployees.find(e => 
+              e.name.toLowerCase() === username.trim().toLowerCase() && 
+              e.role === 'Employee'
+            );
+
+            if (!userFound) {
+              userFound = { id: Date.now().toString(), name: username.trim(), role: 'Employee' };
+              await api.post('/employees', { json: userFound });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Login auth error:', err);
       }
-      let managerUser = store.employees.find(e => e.role === 'Manager') || { id: 'm1', name: ' Manager', role: 'Manager' };
-      store.setCurrentUser(managerUser);
-      this.props.router.navigate('/team-leaves');
-    } else if (role === 'Admin') {
-      if (username !== 'admin' || password !== 'admin@123') {
-        alert("Invalid Admin Credentials (use admin/admin@123)");
-        this.setState({ hasError: true });
-        return;
+
+      if (userFound) {
+        store.setCurrentUser(userFound);
+        const target = role === 'Manager' ? '/team-leaves' : role === 'Admin' ? '/dashboard' : '/apply-leave';
+        this.props.router.navigate(target);
+      } else {
+        this.setState({ hasError: true, animating: false });
       }
-      let adminUser = store.employees.find(e => e.role === 'Admin') || { id: 'a1', name: ' Admin', role: 'Admin' };
-      store.setCurrentUser(adminUser);
-      this.props.router.navigate('/dashboard');
-    } else {
-      // Employee
-      if (password !== '123456') {
-        alert("Invalid Employee Password.");
-        this.setState({ hasError: true });
-        return;
-      }
-      let empUser = store.employees.find(e => e.name.toLowerCase() === username.toLowerCase() && e.role === 'Employee');
-      if (!empUser) {
-        empUser = {
-          id: Date.now().toString(),
-          name: username,
-          role: 'Employee'
-        };
-        store.employees.push(empUser);
-      }
-      store.setCurrentUser(empUser);
-      this.props.router.navigate('/apply-leave');
-    }
+    }, 600);
   };
 
   render() {
-    const { role, username, password, hasError } = this.state;
+    const { role, username, password, hasError, animating } = this.state;
+
     return (
-      <div style={styles.page} className="login-container">
-        
+      <div style={styles.page} className="animate-fadeIn login-container">
         <div style={styles.brandingPanel} className="branding-panel">
           <div style={styles.brandingContent}>
-            <div style={styles.logoGroup}>
-              <div style={styles.logoSquare}></div>
-              <div style={{...styles.logoSquare, backgroundColor: 'rgba(255,255,255,0.4)'}}></div>
+            <div style={styles.brandIcon}>
+              <div style={styles.dot}></div>
+              <div style={styles.dotLine}></div>
             </div>
-            <h1 className="animate-popIn" style={styles.brandTitle}>Sembark</h1>
-            <div className="slidewording-container">
-               <p style={styles.slideText}>Streamline your workspace.</p>
-               <p style={{...styles.slideText, animationDelay: '3s'}}>Effortless leave management.</p>
-               <p style={{...styles.slideText, animationDelay: '6s'}}>Built for modern teams.</p>
+            <h1 style={styles.brandTitle}>Sembark <span style={{ fontWeight: 300 }}>Portal</span></h1>
+            <p style={styles.brandSubtitle}>Intelligence in Leave Management.</p>
+
+            <div style={styles.featureBox}>
+              <div style={styles.featureItem}>
+                <div style={styles.featureDot}></div>
+                <span>Role-based Access Control</span>
+              </div>
+              <div style={styles.featureItem}>
+                <div style={styles.featureDot}></div>
+                <span>Real-time Leave Synchronization</span>
+              </div>
+              <div style={styles.featureItem}>
+                <div style={styles.featureDot}></div>
+                <span>Automated Approval Workflows</span>
+              </div>
             </div>
           </div>
+
           <div style={styles.brandingFooter}>
-            © 2026 Sembark Tech Pvt Ltd
+            &copy; 2026 Sembark Tech Pvt Ltd
           </div>
         </div>
 
-      
         <div style={styles.formPanel} className="form-panel">
-          <div style={styles.card} className={hasError ? "animate-wobble" : "animate-popIn"}>
-            <div style={styles.header}>
-              <h2 style={styles.title}>Access Portal</h2>
-              <p style={styles.subtitle}>Sign in to manage your professional presence</p>
+          <div style={animating ? { ...styles.card, opacity: 0.5, transform: 'scale(0.98)' } : styles.card} className={hasError ? "animate-wobble" : "animate-popIn"}>
+            <div style={styles.formHeader}>
+              <h2 style={styles.title}>Welcome Back</h2>
+              <p style={styles.subtitle}>Select your identity to continue.</p>
             </div>
 
             <form onSubmit={this.handleLogin} style={styles.form}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Identity Profile</label>
-                <select name="role" value={role} onChange={this.handleChange} style={styles.input}>
-                  <option value="Employee">Team Member (Employee)</option>
-                  <option value="Manager">Department Lead (Manager)</option>
-                  <option value="Admin">System Administrator (Admin)</option>
-                </select>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Workspace Role</label>
+                <div style={styles.selectWrapper}>
+                  <select name="role" value={role} onChange={this.handleChange} style={styles.select}>
+                    <option value="Employee">Employee Access</option>
+                    <option value="Manager">Manager Portal</option>
+                    <option value="Admin">Administrator</option>
+                  </select>
+                </div>
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Username</label>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Identifier</label>
                 <input
                   type="text"
                   name="username"
                   value={username}
                   onChange={this.handleChange}
-                  style={styles.input}
-                  placeholder={role === 'Employee' ? "Your full name" : "e.g., manager"}
+                  style={hasError ? { ...styles.input, borderColor: '#ef4444' } : styles.input}
+                  placeholder={role === 'Employee' ? " Employee Name" : "Username"}
+                  autoComplete="off"
                 />
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Access Key</label>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Secure Key</label>
                 <input
                   type="password"
                   name="password"
                   value={password}
                   onChange={this.handleChange}
-                  style={styles.input}
+                  style={hasError ? { ...styles.input, borderColor: '#ef4444' } : styles.input}
                   placeholder="••••••••"
                 />
-                {role !== 'Employee' && (
-                  <small style={styles.hint}>Internal hint: {role.toLowerCase()}@123</small>
+                {hasError && <span style={styles.errorText}>Invalid credentials provided.</span>}
+                {role !== 'Employee' && !hasError && (
+                  <span style={styles.hintText}>Hint: {role.toLowerCase()}/{role.toLowerCase()}@123</span>
                 )}
               </div>
 
-              <button type="submit" style={styles.button}>Secure Sign In</button>
+              <button type="submit" disabled={animating} style={animating ? styles.buttonDisabled : styles.button}>
+                {animating ? 'Authenticating...' : 'Sign In to Workspace'}
+              </button>
             </form>
+
+            <div style={styles.footerLinks}>
+              <span>Trouble signing in?</span>
+              <a href="#" style={styles.link}>Contact Support</a>
+            </div>
           </div>
         </div>
       </div>
@@ -153,48 +181,72 @@ const styles = {
     overflow: 'hidden'
   },
   brandingPanel: {
-    flex: '1.2',
-    backgroundColor: '#1e293b',
-    backgroundImage: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+    flex: '1.4',
+    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+    padding: '80px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
-    padding: '60px',
     color: '#ffffff',
     position: 'relative',
     overflow: 'hidden'
   },
   brandingContent: {
-    marginTop: '10vh'
+    zIndex: 2
   },
-  logoGroup: {
+  brandIcon: {
     display: 'flex',
+    alignItems: 'center',
     gap: '8px',
-    marginBottom: '24px'
+    marginBottom: '40px'
   },
-  logoSquare: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '8px',
+  dot: {
+    width: '24px',
+    height: '24px',
+    borderRadius: '6px',
     backgroundColor: '#3b82f6'
   },
+  dotLine: {
+    width: '40px',
+    height: '24px',
+    borderRadius: '6px',
+    backgroundColor: 'rgba(255,255,255,0.1)'
+  },
   brandTitle: {
-    fontSize: '48px',
+    fontSize: '56px',
     fontWeight: '800',
     margin: '0 0 16px 0',
-    letterSpacing: '-2px'
+    letterSpacing: '-2px',
+    color: '#3b82f6'
   },
-  slideText: {
+  brandSubtitle: {
     fontSize: '20px',
     color: '#94a3b8',
-    margin: 0,
-    position: 'absolute',
-    opacity: 0,
-    animation: 'slideUp 9s infinite linear'
+    marginBottom: '60px',
+    fontWeight: '400'
+  },
+  featureBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px'
+  },
+  featureItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    fontSize: '16px',
+    color: '#cbd5e1'
+  },
+  featureDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: '#3b82f6'
   },
   brandingFooter: {
     fontSize: '14px',
-    color: '#475569'
+    color: '#475569',
+    zIndex: 2
   },
   formPanel: {
     flex: '1',
@@ -206,63 +258,73 @@ const styles = {
   },
   card: {
     width: '100%',
-    maxWidth: '420px',
-    backgroundColor: 'transparent'
+    maxWidth: '400px',
+    transition: 'all 0.3s ease'
   },
-  header: {
-    marginBottom: '40px'
+  formHeader: {
+    marginBottom: '48px'
   },
   title: {
-    fontSize: '32px',
-    fontWeight: '700',
+    fontSize: '36px',
+    fontWeight: '800',
     color: '#0f172a',
-    margin: '0 0 8px 0',
+    margin: '0 0 12px 0',
     letterSpacing: '-1px'
   },
   subtitle: {
     fontSize: '16px',
-    color: '#64748b',
-    margin: 0
+    color: '#64748b'
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '24px'
+    gap: '28px'
   },
-  formGroup: {
+  inputGroup: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px'
+    gap: '10px'
   },
   label: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#334155',
+    fontSize: '12px',
+    fontWeight: '700',
+    color: '#475569',
     textTransform: 'uppercase',
     letterSpacing: '1px'
   },
   input: {
     padding: '16px',
     borderRadius: '12px',
-    border: '1.5px solid #e2e8f0',
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: '#e2e8f0',
     backgroundColor: '#ffffff',
-    color: '#0f172a',
-    fontSize: '15px',
+    color: '#1e293b',
+    fontSize: '16px',
     outline: 'none',
     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-    width: '100%',
-    boxSizing: 'border-box'
+    fontFamily: 'inherit'
   },
-  hint: {
-    marginTop: '6px',
-    fontSize: '12px',
-    color: '#94a3b8',
-    textAlign: 'right',
-    fontStyle: 'italic'
+  selectWrapper: {
+    position: 'relative'
+  },
+  select: {
+    padding: '16px',
+    borderRadius: '12px',
+    borderWidth: '2px',
+    borderStyle: 'solid',
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+    color: '#1e293b',
+    fontSize: '16px',
+    outline: 'none',
+    width: '100%',
+    cursor: 'pointer',
+    appearance: 'none',
+    fontFamily: 'inherit'
   },
   button: {
-    marginTop: '12px',
-    padding: '16px',
+    padding: '18px',
     backgroundColor: '#2563eb',
     color: '#ffffff',
     border: 'none',
@@ -270,8 +332,44 @@ const styles = {
     fontSize: '16px',
     fontWeight: '700',
     cursor: 'pointer',
-    width: '100%',
-    boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -1px rgba(37, 99, 235, 0.1)'
+    boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.3)',
+    transition: 'all 0.2s'
+  },
+  buttonDisabled: {
+    padding: '18px',
+    backgroundColor: '#94a3b8',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '12px',
+    fontSize: '16px',
+    fontWeight: '700',
+    cursor: 'not-allowed',
+    boxShadow: 'none'
+  },
+  errorText: {
+    fontSize: '13px',
+    color: '#ef4444',
+    fontWeight: '500',
+    marginTop: '4px'
+  },
+  hintText: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    fontStyle: 'italic',
+    textAlign: 'right'
+  },
+  footerLinks: {
+    marginTop: '40px',
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '8px',
+    fontSize: '14px',
+    color: '#64748b'
+  },
+  link: {
+    color: '#2563eb',
+    textDecoration: 'none',
+    fontWeight: '600'
   }
 };
 

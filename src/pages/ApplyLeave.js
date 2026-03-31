@@ -32,9 +32,16 @@ class ApplyLeave extends Component {
     }
 
     try {
-
-      const serverTimeResp = await api.get('/server-time');
-      const serverDate = new Date(serverTimeResp.body.currentTime);
+      let serverDate = new Date();
+      try {
+        const serverTimeResp = await api.get('/server-time');
+        if (serverTimeResp.body?.currentTime) {
+          serverDate = new Date(serverTimeResp.body.currentTime);
+        }
+      } catch (innerErr) {
+        console.warn('Failed to fetch server time, falling back to client time:', innerErr.message);
+      }
+      
       const start = new Date(startDate);
       const end = new Date(endDate);
 
@@ -42,9 +49,13 @@ class ApplyLeave extends Component {
       start.setHours(0, 0, 0, 0);
       end.setHours(0, 0, 0, 0);
 
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        this.setState({ error: 'Please enter valid dates.', submitting: false });
+        return;
+      }
+
       if (start < serverDate) {
         this.setState({ error: 'Cannot apply leave in the past.', submitting: false });
-
         return;
       }
 
@@ -53,7 +64,6 @@ class ApplyLeave extends Component {
         return;
       }
 
-
       const diffTime = Math.abs(end - start);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
@@ -61,7 +71,6 @@ class ApplyLeave extends Component {
         this.setState({ error: `Not enough leave balance. You only have ${store.currentBalance} days left.`, submitting: false });
         return;
       }
-
 
       const leaveData = {
         employeeId: store.currentUser.id,
@@ -75,7 +84,6 @@ class ApplyLeave extends Component {
 
       await api.post('/leaves', { json: leaveData });
 
-
       store.deductLeaveDays(diffDays);
 
       this.setState({
@@ -87,7 +95,11 @@ class ApplyLeave extends Component {
       });
 
     } catch (err) {
-      this.setState({ error: 'Failed to apply leave. Try again.', submitting: false });
+      console.error('Submission error:', err);
+      this.setState({ 
+        error: err.message || 'Failed to apply leave. Please ensure the backend is running.', 
+        submitting: false 
+      });
     }
   };
 
@@ -97,8 +109,8 @@ class ApplyLeave extends Component {
     if (!store.currentUser) return null;
 
     return (
-      <div style={styles.container}>
-        <div style={styles.card} className="animate-popIn">
+      <div className="container-responsive">
+        <div style={styles.card} className="animate-popIn card-responsive">
           <div style={styles.header}>
             <div style={styles.brandIcon}>
               <div style={styles.dot}></div>
@@ -161,10 +173,11 @@ class ApplyLeave extends Component {
 
             <button
               type="submit"
+              className={this.state.submitting ? "" : "btn-hover-scale animate-pulse-blue"}
               style={this.state.submitting ? styles.buttonDisabled : styles.button}
               disabled={this.state.submitting}
             >
-              {this.state.submitting ? 'Processing...' : 'Submit Request'}
+              {this.state.submitting ? 'Authenticating Submission...' : 'Submit Leave Request'}
             </button>
           </form>
         </div>
@@ -175,11 +188,9 @@ class ApplyLeave extends Component {
 
 const styles = {
   container: {
+    width: '100%',
     height: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '20px'
+    boxSizing: 'border-box'
   },
   card: {
     backgroundColor: '#ffffff',

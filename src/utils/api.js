@@ -1,5 +1,5 @@
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'http://localhost:9000';
 
 const gotWrapper = async (url, options = {}) => {
   const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
@@ -18,17 +18,29 @@ const gotWrapper = async (url, options = {}) => {
     config.body = JSON.stringify(options.json);
   }
 
-  const response = await fetch(fullUrl, config);
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || 'API Error');
-  }
+  try {
+    const response = await fetch(fullUrl, config);
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      data = { message: 'Failed to parse JSON response' };
+    }
+    
+    if (!response.ok) {
+      throw new Error(data.message || `API Error: ${response.status} ${response.statusText}`);
+    }
 
-  return {
-    body: data,
-    statusCode: response.status
-  };
+    return {
+      body: data,
+      statusCode: response.status
+    };
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      throw new Error(`Connection to server failed. Please ensure the backend is running at ${API_BASE}.`);
+    }
+    throw error;
+  }
 };
 
 export const got = {

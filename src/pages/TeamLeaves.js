@@ -10,7 +10,9 @@ class TeamLeaves extends Component {
   state = {
     teamLeaves: [],
     loading: true,
-    employeesList: []
+    employeesList: [],
+    error: '',
+    processingId: null
   };
 
   componentDidMount() {
@@ -28,13 +30,12 @@ class TeamLeaves extends Component {
     try {
       const resp = await api.get('/employees');
       this.setState({ employeesList: resp.body });
-    } catch (err) { }
+    } catch (err) {}
   };
 
   fetchLeavesFromUrl = async () => {
-    this.setState({ loading: true });
+    this.setState({ loading: true, error: '' });
     try {
-
       const query = new URLSearchParams(this.props.router.location.search);
       const employee = query.get('employee') || '';
       const status = query.get('status') || '';
@@ -46,162 +47,161 @@ class TeamLeaves extends Component {
       const resp = await api.get(url);
       this.setState({ teamLeaves: resp.body, loading: false });
     } catch (err) {
-      this.setState({ loading: false });
+      this.setState({ 
+        loading: false, 
+        error: 'Network synchronization failed. Please verify server connectivity.' 
+      });
     }
   };
 
   handleFilterChange = (e) => {
     const { name, value } = e.target;
     const query = new URLSearchParams(this.props.router.location.search);
-
-    if (value) {
-      query.set(name, value);
-    } else {
-      query.delete(name);
-    }
-
+    if (value) query.set(name, value);
+    else query.delete(name);
     this.props.router.navigate(`?${query.toString()}`);
   };
 
   handleAction = async (leaveId, actionStatus) => {
+    this.setState({ processingId: leaveId });
     try {
-      const leaveIndex = this.state.teamLeaves.findIndex(l => l.id === leaveId);
-      if (leaveIndex === -1) return;
-
-      const leave = this.state.teamLeaves[leaveIndex];
-
-
-      const newLeaves = [...this.state.teamLeaves];
-      newLeaves[leaveIndex] = { ...leave, status: actionStatus, animating: true };
-      this.setState({ teamLeaves: newLeaves });
+      const leave = this.state.teamLeaves.find(l => l.id === leaveId);
+      if (!leave) return;
 
       const updatedLeave = { ...leave, status: actionStatus };
       await api.put(`/leaves/${leaveId}`, { json: updatedLeave });
 
+      // Artificial delay for smooth animation transition
       setTimeout(() => {
         this.fetchLeavesFromUrl();
-      }, 500);
+        this.setState({ processingId: null });
+      }, 600);
     } catch (err) {
       console.error(err);
+      this.setState({ processingId: null });
       this.fetchLeavesFromUrl();
     }
   };
 
   render() {
-    const { teamLeaves, loading } = this.state;
+    const { teamLeaves, loading, error, processingId } = this.state;
     const query = new URLSearchParams(this.props.router.location.search);
     const employeeFilter = query.get('employee') || '';
     const statusFilter = query.get('status') || '';
 
     return (
-      <div style={styles.container}>
-        <div style={styles.card} className="animate-popIn">
+      <div className="container-responsive">
+        <div style={styles.card} className="animate-popIn card-responsive">
           <div style={styles.header}>
-            <div style={styles.logo}>
-              {/* <div style={styles.logoSquare}></div> */}
-              {/* <div style={{...styles.logoSquare, backgroundColor: '#475569'}}></div> */}
+            <div style={styles.headerContent}>
+              <div style={styles.headerTitleGroup}>
+                <div style={styles.brandBadge}>Management</div>
+                <h2 style={styles.title}>Team Leave Requests</h2>
+                <p style={styles.subtitle}>Administrative control for application processing.</p>
+              </div>
+              <div style={styles.filters}>
+                <input
+                  type="text"
+                  name="employee"
+                  placeholder="Seach by name..."
+                  value={employeeFilter}
+                  onChange={this.handleFilterChange}
+                  style={styles.input}
+                />
+                <select
+                  name="status"
+                  value={statusFilter}
+                  onChange={this.handleFilterChange}
+                  style={styles.select}
+                >
+                  <option value="">All Statuses</option>
+                  <option value="Pending">Pending Only</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+              </div>
             </div>
-            <h2 style={styles.title}>Team Requests</h2>
-            <p style={styles.subtitle}>Review and manage employee leave applications.</p>
           </div>
 
-          <div style={styles.filters}>
-            <input
-              type="text"
-              name="employee"
-              placeholder="Filter by Employee Name"
-              value={employeeFilter}
-              onChange={this.handleFilterChange}
-              style={styles.input}
-            />
-            <select
-              name="status"
-              value={statusFilter}
-              onChange={this.handleFilterChange}
-              style={styles.select}
-            >
-              <option value="">All Statuses</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-
-          {loading ? (
-            <p style={{ textAlign: 'center', color: '#64748b' }}>Loading records...</p>
-          ) : teamLeaves.length === 0 ? (
-            <div style={styles.emptyState}>
-              <p>No pending or historical records found.</p>
-            </div>
-          ) : (
-            <div style={styles.tableWrapper} className="table-responsive">
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    <th style={styles.th}>Employee</th>
-                    <th style={styles.th}>Dates</th>
-                    <th style={styles.th}>Days</th>
-                    <th style={styles.th}>Reason</th>
-                    <th style={styles.th}>Status</th>
-                    <th style={styles.th}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {teamLeaves.map((leave, i) => (
-                    <tr
-                      key={leave.id}
-                      style={leave.animating ? { ...styles.tr, ...styles.trAnimating } : styles.tr}
-                    >
-                      <td style={styles.td}>
-                        <div style={{ fontWeight: '600', color: '#1e293b' }}>{leave.employee}</div>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={{ color: '#475569', fontSize: '0.9rem' }}>{leave.startDate}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>to {leave.endDate}</div>
-                      </td>
-                      <td style={styles.td}>
-                        <span style={styles.dayBadge}>{leave.days}d</span>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={styles.reasonText}>{leave.reason}</div>
-                      </td>
-                      <td style={styles.td}>
-                        <span style={{
-                          ...styles.statusBadge,
-                          backgroundColor: leave.status === 'Approved' ? '#dcfce7' : leave.status === 'Rejected' ? '#fee2e2' : '#fef9c3',
-                          color: leave.status === 'Approved' ? '#166534' : leave.status === 'Rejected' ? '#991b1b' : '#854d0e',
-                          border: `1px solid ${leave.status === 'Approved' ? '#bbf7d0' : leave.status === 'Rejected' ? '#fecaca' : '#fef08a'}`
-                        }}>
-                          {leave.status}
-                        </span>
-                      </td>
-                      <td style={styles.td}>
-                        {leave.status === 'Pending' && (
-                          <div style={styles.actionButtons}>
-                            <button
-                              onClick={() => this.handleAction(leave.id, 'Approved')}
-                              style={styles.btnApprove}
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => this.handleAction(leave.id, 'Rejected')}
-                              style={styles.btnReject}
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
-                        {leave.status !== 'Pending' && (
-                          <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontStyle: 'italic' }}>Resolved</span>
-                        )}
-                      </td>
+          <div style={styles.content}>
+            {loading ? (
+              <div style={styles.loadingArea}>
+                <div style={styles.spinner}></div>
+              </div>
+            ) : error ? (
+              <div style={styles.errorArea}>{error}</div>
+            ) : teamLeaves.length === 0 ? (
+              <div style={styles.emptyArea}>No records found matching your filters.</div>
+            ) : (
+              <div style={styles.tableWrapper} className="table-responsive">
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Employee Identity</th>
+                      <th style={styles.th}>Schedule</th>
+                      <th style={styles.th}>Days</th>
+                      <th style={styles.th}>Justification</th>
+                      <th style={styles.th}>Current Status</th>
+                      <th style={styles.th}>Resolution</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {teamLeaves.map((leave) => (
+                      <tr key={leave.id} style={processingId === leave.id ? styles.trProcessing : styles.tr} className={processingId === leave.id ? "animate-shimmer table-row-animate" : "table-row-animate"}>
+                        <td style={styles.td}>
+                          <div style={styles.empName}>{leave.employee}</div>
+                          <div style={styles.empId}>ID: #{leave.employeeId || 'N/A'}</div>
+                        </td>
+                        <td style={styles.td}>
+                          <div style={styles.dateRange}>{leave.startDate}</div>
+                          <div style={{fontSize: '11px', color: '#94a3b8'}}>to {leave.endDate}</div>
+                        </td>
+                        <td style={styles.td}>
+                          <span style={styles.dayBadge}>{leave.days} d</span>
+                        </td>
+                        <td style={styles.td}>
+                          <div title={leave.reason} style={styles.reasonText}>{leave.reason}</div>
+                        </td>
+                        <td style={styles.td}>
+                          <span style={{
+                            ...styles.statusBadge,
+                            backgroundColor: leave.status === 'Approved' ? '#ecfdf5' : leave.status === 'Rejected' ? '#fef2f2' : '#fffbeb',
+                            color: leave.status === 'Approved' ? '#059669' : leave.status === 'Rejected' ? '#dc2626' : '#d97706',
+                          }}>
+                            {leave.status}
+                          </span>
+                        </td>
+                        <td style={styles.td}>
+                          {leave.status === 'Pending' ? (
+                            <div style={styles.actions}>
+                              <button 
+                                onClick={() => this.handleAction(leave.id, 'Approved')} 
+                                style={styles.approveBtn}
+                                className="btn-hover-scale"
+                                disabled={processingId !== null}
+                              >
+                                Approve
+                              </button>
+                              <button 
+                                onClick={() => this.handleAction(leave.id, 'Rejected')} 
+                                style={styles.rejectBtn}
+                                className="btn-hover-scale"
+                                disabled={processingId !== null}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span style={styles.resolvedLabel}>Archive Verified</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -210,181 +210,225 @@ class TeamLeaves extends Component {
 
 const styles = {
   container: {
+    width: '100%',
     height: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    padding: '24px',
     boxSizing: 'border-box'
   },
   card: {
-    backgroundColor: '#ffffff',
-    padding: 'clamp(20px, 5vw, 32px)',
-    borderRadius: '16px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
     width: '100%',
     maxWidth: '1200px',
-    border: '1px solid #e2e8f0',
+    backgroundColor: '#ffffff',
+    borderRadius: '24px',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02)',
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden'
+    overflowY: 'auto',
+    maxHeight: 'calc(100vh - 120px)',
+    border: '1px solid #e2e8f0'
   },
   header: {
-    marginBottom: '24px',
+    padding: '32px',
     borderBottom: '1px solid #f1f5f9',
-    paddingBottom: '20px',
-    textAlign: 'center',
-    flexShrink: 0
+    backgroundColor: '#ffffff'
   },
-  logo: {
+  headerContent: {
     display: 'flex',
-    justifyContent: 'center',
-    gap: '4px',
-    marginBottom: '16px'
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: '24px',
+    flexWrap: 'wrap'
   },
-  logoSquare: {
-    width: '14px',
-    height: '14px',
-    borderRadius: '3px',
-    backgroundColor: '#2563eb'
+  headerTitleGroup: {
+    flex: '1'
+  },
+  brandBadge: {
+    display: 'inline-block',
+    padding: '4px 12px',
+    backgroundColor: '#eff6ff',
+    color: '#2563eb',
+    fontSize: '11px',
+    fontWeight: '800',
+    borderRadius: '20px',
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
+    marginBottom: '12px'
   },
   title: {
-    marginTop: 0,
-    marginBottom: '4px',
+    fontSize: '28px',
+    fontWeight: '800',
     color: '#0f172a',
-    fontSize: '20px',
-    fontWeight: '700',
-    letterSpacing: '-0.3px'
+    margin: '0 0 4px 0',
+    letterSpacing: '-1px'
   },
   subtitle: {
+    fontSize: '15px',
     color: '#64748b',
-    fontSize: '14px',
     margin: 0
   },
   filters: {
     display: 'flex',
-    gap: '12px',
-    marginBottom: '24px',
-    flexWrap: 'wrap',
-    flexShrink: 0
+    gap: '12px'
   },
   input: {
-    padding: '12px 16px',
+    padding: '12px 18px',
     borderRadius: '12px',
-    border: '1px solid #cbd5e1',
-    flex: '1',
-    minWidth: '200px',
-    fontSize: '0.95rem',
+    border: '1.5px solid #e2e8f0',
+    fontSize: '14px',
     outline: 'none',
-    backgroundColor: '#f8fafc'
+    width: '240px',
+    fontFamily: 'inherit'
   },
   select: {
-    padding: '12px 16px',
+    padding: '12px 18px',
     borderRadius: '12px',
-    border: '1px solid #cbd5e1',
-    minWidth: '180px',
-    fontSize: '0.95rem',
+    border: '1.5px solid #e2e8f0',
+    fontSize: '14px',
     outline: 'none',
-    backgroundColor: '#f8fafc'
+    width: '180px',
+    fontFamily: 'inherit',
+    cursor: 'pointer'
+  },
+  content: {
+    flex: 1,
+    padding: '0 32px 32px 32px',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  loadingArea: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  spinner: {
+    width: '40px',
+    height: '40px',
+    border: '4px solid #f1f5f9',
+    borderTop: '4px solid #2563eb',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
   },
   tableWrapper: {
-    width: '100%',
-    overflowX: 'auto',
-    overflowY: 'auto',
-    borderRadius: '12px',
-    border: '1px solid #e2e8f0',
-    flex: 1
+    flex: 1,
+    overflow: 'auto',
+    borderRadius: '16px',
+    border: '1px solid #f1f5f9'
   },
   table: {
     width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: '600px'
+    borderCollapse: 'separate',
+    borderSpacing: 0
   },
   th: {
+    padding: '20px',
     textAlign: 'left',
-    padding: '14px 16px',
     backgroundColor: '#f8fafc',
+    fontSize: '12px',
+    fontWeight: '800',
     color: '#475569',
-    fontWeight: '700',
-    fontSize: '0.85rem',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    borderBottom: '2px solid #e2e8f0'
+    letterSpacing: '1px',
+    borderBottom: '1px solid #e2e8f0',
+    position: 'sticky',
+    top: 0,
+    zIndex: 10
   },
   tr: {
-    borderBottom: '1px solid #f1f5f9',
-    transition: 'background-color 0.2s, transform 0.2s'
+    transition: 'background-color 0.2s'
   },
-  trAnimating: {
-    transform: 'scale(1.01)',
-    backgroundColor: '#f8fafc'
+  trProcessing: {
+    backgroundColor: '#f8fafc',
+    opacity: 0.6,
+    transition: 'all 0.4s'
   },
   td: {
-    padding: '16px',
-    color: '#334155',
+    padding: '20px',
+    borderBottom: '1px solid #f8fafc',
     verticalAlign: 'middle'
   },
-  reasonText: {
-    maxWidth: '200px',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    fontSize: '0.9rem',
-    color: '#475569'
+  empName: {
+    fontWeight: '700',
+    color: '#1e293b',
+    fontSize: '15px'
   },
-  dayBadge: {
-    backgroundColor: '#f1f5f9',
-    padding: '4px 8px',
-    borderRadius: '6px',
-    fontSize: '0.85rem',
+  empId: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    marginTop: '2px'
+  },
+  dateRange: {
     fontWeight: '600',
     color: '#334155',
-    border: '1px solid #e2e8f0'
+    fontSize: '14px'
+  },
+  dayBadge: {
+    padding: '4px 10px',
+    backgroundColor: '#f1f5f9',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '700',
+    color: '#475569'
+  },
+  reasonText: {
+    fontSize: '14px',
+    color: '#64748b',
+    maxWidth: '220px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap'
   },
   statusBadge: {
-    padding: '6px 12px',
-    borderRadius: '20px',
-    fontSize: '0.8rem',
-    fontWeight: '700',
-    display: 'inline-block',
+    padding: '6px 14px',
+    borderRadius: '10px',
+    fontSize: '11px',
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: '0.5px'
   },
-  actionButtons: {
+  actions: {
     display: 'flex',
-    gap: '8px'
+    gap: '10px'
   },
-  btnApprove: {
+  approveBtn: {
+    padding: '8px 16px',
     backgroundColor: '#10b981',
-    color: 'white',
+    color: '#ffffff',
     border: 'none',
-    padding: '8px 14px',
-    borderRadius: '8px',
-    cursor: 'pointer',
+    borderRadius: '10px',
+    fontSize: '13px',
     fontWeight: '700',
-    fontSize: '0.85rem',
-    transition: 'background-color 0.2s, transform 0.1s',
-    boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
+    cursor: 'pointer',
+    transition: 'all 0.2s'
   },
-  btnReject: {
+  rejectBtn: {
+    padding: '8px 16px',
     backgroundColor: '#ef4444',
-    color: 'white',
+    color: '#ffffff',
     border: 'none',
-    padding: '8px 14px',
-    borderRadius: '8px',
-    cursor: 'pointer',
+    borderRadius: '10px',
+    fontSize: '13px',
     fontWeight: '700',
-    fontSize: '0.85rem',
-    transition: 'background-color 0.2s, transform 0.1s',
-    boxShadow: '0 2px 4px rgba(239, 68, 68, 0.2)'
+    cursor: 'pointer',
+    transition: 'all 0.2s'
   },
-  emptyState: {
-    textAlign: 'center',
+  resolvedLabel: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    fontStyle: 'italic',
+    fontWeight: '500'
+  },
+  errorArea: {
     padding: '40px',
-    color: '#64748b'
+    textAlign: 'center',
+    color: '#ef4444',
+    fontWeight: '600'
   },
-  emptyIcon: {
-    fontSize: '3rem',
-    marginBottom: '10px'
+  emptyArea: {
+    padding: '60px',
+    textAlign: 'center',
+    color: '#64748b',
+    fontSize: '16px'
   }
 };
 

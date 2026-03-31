@@ -40,11 +40,14 @@ class RootStore {
     try {
       const response = await api.get('/employees');
       runInAction(() => {
-        this.employees = response.body;
-      
+        this.employees = Array.isArray(response.body) ? response.body : [];
       });
     } catch (e) {
-      console.error('Failed to load employees', e);
+      console.error('Failed to load employees:', e.message);
+      // Fallback to empty array to prevent crashes
+      runInAction(() => {
+        this.employees = [];
+      });
     }
   }
 
@@ -66,13 +69,22 @@ class RootStore {
   async fetchServerTime() {
     try {
       const resp = await api.get('/server-time');
+      const timeStr = resp.body?.currentTime;
       runInAction(() => {
-        this.serverTime = new Date(resp.body.currentTime);
+        if (timeStr) {
+          this.serverTime = new Date(timeStr);
+        } else {
+          this.serverTime = new Date();
+        }
       });
       return this.serverTime;
     } catch (e) {
-      console.error('Failed to get server time', e);
-      return new Date();
+      console.error('Failed to get server time:', e.message);
+      const fallback = new Date();
+      runInAction(() => {
+        this.serverTime = fallback;
+      });
+      return fallback;
     }
   }
 
