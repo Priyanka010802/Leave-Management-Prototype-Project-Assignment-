@@ -71,7 +71,7 @@ class TeamLeaves extends Component {
       const updatedLeave = { ...leave, status: actionStatus };
       await api.put(`/leaves/${leaveId}`, { json: updatedLeave });
 
-      // Artificial delay for smooth animation transition
+      
       setTimeout(() => {
         this.fetchLeavesFromUrl();
         this.setState({ processingId: null });
@@ -96,14 +96,14 @@ class TeamLeaves extends Component {
             <div style={styles.headerContent}>
               <div style={styles.headerTitleGroup}>
                 <div style={styles.brandBadge}>Management</div>
-                <h2 style={styles.title}>Team Leave Requests</h2>
+                <h1 style={styles.title}>Team Leave Requests</h1>
                 <p style={styles.subtitle}>Administrative control for application processing.</p>
               </div>
               <div style={styles.filters}>
                 <input
                   type="text"
                   name="employee"
-                  placeholder="Seach by name..."
+                  placeholder="Search by name..."
                   value={employeeFilter}
                   onChange={this.handleFilterChange}
                   style={styles.input}

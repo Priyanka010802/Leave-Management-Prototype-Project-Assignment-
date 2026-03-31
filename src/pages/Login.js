@@ -163,7 +163,7 @@ class Login extends Component {
 
             <div style={styles.footerLinks}>
               <span>Trouble signing in?</span>
-              <a href="#" style={styles.link}>Contact Support</a>
+              <a href="#!" style={styles.link}>Contact Support</a>
             </div>
           </div>
         </div>

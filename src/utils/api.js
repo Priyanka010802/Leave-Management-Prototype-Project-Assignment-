@@ -1,5 +1,5 @@
 
-const API_BASE = 'http://localhost:9000';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:9000';
 
 const gotWrapper = async (url, options = {}) => {
   const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;

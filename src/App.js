@@ -39,13 +39,13 @@ class App extends Component {
                     <MyLeaves />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/team-leaves" element={
                   <ProtectedRoute allowedRoles={['Manager', 'Admin']}>
                     <TeamLeaves />
                   </ProtectedRoute>
                 } />
-                
+
                 <Route path="/dashboard" element={
                   <ProtectedRoute allowedRoles={['Admin']}>
                     <Dashboard />

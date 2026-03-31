@@ -14,15 +14,25 @@ class RootStore {
   }
 
   hydrate() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      this.currentUser = JSON.parse(savedUser);
+    try {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        this.currentUser = JSON.parse(savedUser);
+      }
+    } catch (e) {
+      console.warn('Failed to parse current user from storage:', e.message);
+      this.currentUser = null;
     }
     
-    const savedBalances = localStorage.getItem('leaveBalances');
-    if (savedBalances) {
-      this.leaveBalances = JSON.parse(savedBalances);
-    } else {
+    try {
+      const savedBalances = localStorage.getItem('leaveBalances');
+      if (savedBalances) {
+        this.leaveBalances = JSON.parse(savedBalances);
+      } else {
+        this.leaveBalances = {};
+      }
+    } catch (e) {
+      console.warn('Failed to parse leave balances from storage:', e.message);
       this.leaveBalances = {};
     }
   }
@@ -44,7 +54,7 @@ class RootStore {
       });
     } catch (e) {
       console.error('Failed to load employees:', e.message);
-      // Fallback to empty array to prevent crashes
+      
       runInAction(() => {
         this.employees = [];
       });

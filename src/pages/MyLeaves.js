@@ -52,7 +52,7 @@ class MyLeaves extends Component {
               <div style={styles.dot}></div>
               <div style={styles.dotLine}></div>
             </div>
-            <h2 style={styles.title}>Your Leave History</h2>
+            <h1 style={styles.title}>Your Leave History</h1>
             <p style={styles.subtitle}>Track and manage your submitted requests.</p>
           </div>
 

@@ -116,7 +116,7 @@ class ApplyLeave extends Component {
               <div style={styles.dot}></div>
               <div style={styles.dotLine}></div>
             </div>
-            <h2 style={styles.title}>Apply for Leave</h2>
+            <h1 style={styles.title}>Apply for Leave</h1>
             <p style={styles.subtitle}>Submit your request for time-off.</p>
           </div>
 
